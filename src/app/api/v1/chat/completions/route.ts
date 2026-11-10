@@ -120,7 +120,7 @@ export async function POST(request: Request) {
           }
           if (cause instanceof Error && cause.name === "TimeoutError") {
             controller.enqueue(new TextEncoder().encode(
-              `data: ${JSON.stringify({ error: { message: "Model provider request timed out.", type: "timeout_error", code: 504 } })}\\n\\ndata: [DONE]\\n\\n`
+              `data: ${JSON.stringify({ error: { message: "Model provider request timed out.", type: "timeout_error", code: 504 } })}\n\ndata: [DONE]\n\n`
             ));
             controller.close();
             return;
