@@ -143,7 +143,6 @@ before(async () => {
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async (input,init) => {
     const url=typeof input==="string"?input:input instanceof URL?input.href:input.url;
-    if (url.includes("/rest/v1/")) process.stderr.write(`TEST_FETCH ${new URL(url).pathname}\\n`);
     if(url.startsWith("https://openrouter.ai/api/v1/chat/completions")) {
       return originalFetch(`${origin}/chat/completions`,init);
     }
