@@ -1,19 +1,7 @@
 import Link from "next/link";
-
-export default function SettingsPage() {
-  return (
-    <main className="dashboard">
-      <p className="eyebrow">WORKSPACE</p>
-      <h1>Workspace <span>settings.</span></h1>
-      <p className="intro">Configure the OpenRouter connection through your server environment. Keep provider credentials out of client-side variables.</p>
-      <section className="callout">
-        <div>
-          <p className="eyebrow">SERVER CONFIGURATION</p>
-          <h2>OPENROUTER_API_KEY</h2>
-          <p>Set this variable in your local .env.local file or deployment environment. Never expose it with a NEXT_PUBLIC_ prefix.</p>
-        </div>
-        <Link href="/models">Browse models ↗</Link>
-      </section>
-    </main>
-  );
+import { createClient } from "@/lib/supabase/server";
+export default async function SettingsPage() {
+ const supabase = await createClient();
+ const { data: { user } } = await supabase.auth.getUser();
+ return <main className="dashboard"><p className="eyebrow">WORKSPACE SETTINGS</p><h1>Your <span>account.</span></h1><p className="intro">Manage the account connected to your private model workspace.</p><section className="callout" style={{marginTop:36}}><div><p className="eyebrow">SIGNED IN AS</p><h2>{user?.email ?? "Authenticated user"}</h2><p>Your model requests are associated with this account.</p></div><form action="/auth/signout" method="post"><button className="auth-signout" type="submit">Sign out</button></form></section><p style={{marginTop:28,color:"#91a0b4",fontSize:13}}><Link href="/activity">View your usage history →</Link></p></main>;
 }
