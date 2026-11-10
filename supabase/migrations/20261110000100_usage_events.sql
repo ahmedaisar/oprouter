@@ -25,9 +25,6 @@ create policy "Users can read their own usage"
   on public.usage_events for select to authenticated
   using ((select auth.uid()) = user_id);
 
-drop policy if exists "Users can insert their own usage" on public.usage_events;
-create policy "Users can insert their own usage"
-  on public.usage_events for insert to authenticated
-  with check ((select auth.uid()) = user_id);
-
+-- Writes are reserved for trusted server-side ingestion (service role).
+-- Authenticated browser clients cannot forge token counts or estimated costs.
 -- No update or delete policy: user usage records are immutable.
