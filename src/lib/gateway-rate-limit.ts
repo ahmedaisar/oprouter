@@ -7,7 +7,7 @@ export function getGatewayRateLimit(raw = process.env.GATEWAY_RATE_LIMIT_PER_MIN
   return limit;
 }
 
-export function createRateLimitHeaders(limit: number, remaining: number, resetAt: string | Date): HeadersInit {
+export function createRateLimitHeaders(limit: number, remaining: number, resetAt: string | Date): Record<string, string> {
   const reset = new Date(resetAt);
   if (!Number.isFinite(reset.getTime())) throw new Error("Rate limit reset time is invalid.");
   return {
