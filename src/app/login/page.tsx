@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -11,8 +11,10 @@ function getSafeDestination() {
 }
 
 export default function LoginPage() {
-  const [destination] = useState(getSafeDestination);
-  const [hasAuthError] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).has("error"));
+  const [hasAuthError, setHasAuthError] = useState(false);
+  useEffect(() => {
+    setHasAuthError(new URLSearchParams(window.location.search).has("error"));
+  }, []);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,12 +30,12 @@ export default function LoginPage() {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.assign(destination);
+        window.location.assign(getSafeDestination());
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/auth/callback?next=" + encodeURIComponent(destination) }
+          options: { emailRedirectTo: window.location.origin + "/auth/callback?next=" + encodeURIComponent(getSafeDestination()) }
         });
         if (error) throw error;
         setMessage(data.session ? "Account created. You can now continue." : "Check your email to confirm your account, then sign in.");
