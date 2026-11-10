@@ -86,9 +86,9 @@ before(async () => {
       if (new URL(req.url ?? "/", "http://local").pathname === "/rest/v1/api_keys" && req.method === "GET") {
         const prefix = new URL(req.url ?? "/", "http://local").searchParams.get("key_prefix")?.replace(/^eq\./, "");
         const record = records.get(prefix ?? "");
-        return json(res, 200, record ? [record] : []);
+        return json(res, 200, record ?? null);
       }
-      if (req.url === "/rest/v1/api_keys" && req.method === "PATCH") {
+      if (new URL(req.url ?? "/", "http://local").pathname === "/rest/v1/api_keys" && req.method === "PATCH") {
         res.writeHead(204); res.end(); return;
       }
       if (req.url === "/rest/v1/rpc/consume_gateway_rate_limit" && req.method === "POST") {
