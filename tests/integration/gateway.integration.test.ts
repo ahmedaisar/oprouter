@@ -292,7 +292,7 @@ test("emits a terminal SSE timeout event and releases quota after stream headers
     const body = await response.text();
     assert.match(body, /"type":"timeout_error"/);
     assert.match(body, /Model provider request timed out/);
-    assert.match(body, /data: \\[DONE\\]/);
+    assert.ok(body.includes("data: [DONE]"));
     assert.ok(releaseCalls > releasesBefore, "quota reservation should be released after a stream timeout");
   } finally {
     providerMode = "normal";
