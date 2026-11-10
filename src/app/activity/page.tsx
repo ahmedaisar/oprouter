@@ -75,7 +75,7 @@ export default async function ActivityPage() {
           <>
             <h2>{numberFormat.format(used)} <span>/ {numberFormat.format(quota.monthly_limit)} tokens</span></h2>
             <p>{numberFormat.format(reserved)} tokens are reserved for requests currently in progress.</p>
-            <progress aria-label="Monthly token allowance used or reserved" value={committed} max={quota.monthly_limit} style={{ width: "100%", marginTop: 12 }} />
+            <progress aria-label="Monthly token allowance used or reserved" value={percentage} max={100} style={{ width: "100%", marginTop: 12 }} />
             <p style={{ color: "#91a0b4", fontSize: 13 }}>Resets {new Date(quota.resets_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.</p>
           </>
         ) : quotaUnavailable ? (
