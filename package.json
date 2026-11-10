@@ -1,7 +1,10 @@
 {
   "name": "oprouter",
   "version": "1.0.0",
-  "private": true,\n  "engines": {\n    "node": ">=22"\n  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
