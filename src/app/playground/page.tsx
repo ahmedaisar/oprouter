@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import "./playground.css";
 
 type Model = { id:string; name:string; promptPrice:number; completionPrice:number; contextLength:number };
@@ -27,7 +26,6 @@ async function streamModel(modelId:string,prompt:string,onText:(text:string)=>vo
 }
 
 export default function PlaygroundPage(){
- const search=useSearchParams();
  const [models,setModels]=useState<Model[]>([]);
  const [selected,setSelected]=useState<string[]>([]);
  const [prompt,setPrompt]=useState("");
@@ -38,11 +36,11 @@ export default function PlaygroundPage(){
  useEffect(()=>{
   let active=true;
   fetch("/api/models").then(async r=>{if(!r.ok)throw new Error("Could not load model directory.");return r.json();})
-   .then(d=>{if(!active)return;const list=(d.models??[]) as Model[];setModels(list);const requested=(search.get("models")??"").split(",").filter(Boolean);const valid=requested.filter(id=>list.some(m=>m.id===id)).slice(0,3);setSelected(valid.length?valid:[list[0]?.id].filter(Boolean) as string[]);})
+   .then(d=>{if(!active)return;const list=(d.models??[]) as Model[];setModels(list);const requested=(new URLSearchParams(window.location.search).get("models")??"").split(",").filter(Boolean);const valid=requested.filter(id=>list.some(m=>m.id===id)).slice(0,3);setSelected(valid.length?valid:[list[0]?.id].filter(Boolean) as string[]);})
    .catch(e=>{if(active)setCatalogueError(e instanceof Error?e.message:"Unable to load models.");})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
- },[search]);
+ },[]);
  const toggle=(id:string)=>setSelected(current=>current.includes(id)?current.filter(x=>x!==id):current.length<3?[...current,id]:current);
  async function submit(event:FormEvent){
   event.preventDefault();const value=prompt.trim();if(!value||!selected.length||sending)return;
