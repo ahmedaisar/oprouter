@@ -39,7 +39,7 @@ export default function LoginPage() {
         });
         if (error) throw error;
         setMessage(data.session ? "Account created. You can now continue." : "Check your email to confirm your account, then sign in.");
-        if (data.session) window.location.assign(destination);
+        if (data.session) window.location.assign(getSafeDestination());
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Authentication failed.");
