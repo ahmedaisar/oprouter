@@ -97,7 +97,9 @@ before(async () => {
         const current = rateCounts.get(body.p_api_key_id);
         if (!current || now - current.start >= body.p_window_seconds * 1000) {
           rateCounts.set(body.p_api_key_id, { start: now, count: 1 });
-        } else if (current.count < body.p_limit) current.count++;
+        } else {
+          current.count++;
+        }
         const result = rateCounts.get(body.p_api_key_id)!;
         return json(res, 200, [{ allowed: result.count <= body.p_limit, remaining: Math.max(0, body.p_limit-result.count), reset_at: new Date(result.start + body.p_window_seconds*1000).toISOString() }]);
       }
