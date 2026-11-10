@@ -21,16 +21,21 @@
 - Existing code: Next.js workspace, basic model catalogue, text playground, Supabase auth, activity/settings routes, API key management and an OpenAI-compatible chat-completions gateway.
 - Existing gateway controls: hashed API keys, optional model allowlists, monthly token quotas/reservations and persistent per-key fixed-window rate limits.
 - Not yet proven: production authenticated/provider flow, complete RPC privilege/RLS matrix, route fallback, direct provider adapters, multimodal endpoints, billing ledger, BYOK, workspaces, guardrails, SDKs, CLI, MCP, complete analytics and production readiness.
-- PRs #13, #15 and #16 remain the immediate engineering/documentation queue at the time of this plan update. Recheck live status before merging.
+- PR #15 (competitive product plan and system documentation) merged to `main` on 2026-11-10.
+- PR #13 remains open with configurable provider timeout and deterministic timeout/quota-cleanup integration coverage; exact-head CI passed on commit `0a7cce5807955d98245ccbce8f873ec01e532a73`. Independent review and merge are still outstanding.
+- PR #16 remains open with fast PR checks and separate scheduled/manual comprehensive validation. Its earlier fast-check run passed; recheck the exact current head before merging.
 - Current status is not feature parity. See the competitive benchmark for capability-by-capability state.
 
 ## Lifecycle and delivery phases
 
-### Phase 0 — Product definition and design (current strategic update)
+### Phase 0 — Product definition and design (in progress)
 - Source-backed competitor benchmark, capability matrix, differentiator hypotheses and initial beachhead.
 - Map each core job to a screen and its question/primary action.
-- Produce two visual directions for the first key screens, then implement from the approved design system.
-- Done when the owner approves the direction, jobs map and first-screen designs.
+- Use `design-taste-frontend` (Taste Skill 2.5.1) as the frontend visual-design and implementation skill; do not use Figma for OpRouter UI.
+- Apply the Product Engineering `ui-design` skill alongside it: PE owns jobs, data truth, app-screen states, the product token/primitive kit, accessibility and owner review; Taste owns the software-page visual craft, copy discipline, layout, motion and frontend finish checks.
+- Build and maintain the app kit in `design/tokens.css`, `design/kit.css` and `design/README.md` before adding new screens. Deal palette/type/layout through Taste Skill's scripts rather than inventing a fresh style per screen.
+- Review the first real app screens in-browser at desktop, tablet and phone widths before broad feature implementation; no Figma artboards.
+- Done when the jobs map is accepted, the kit is in code, key flows have populated/empty/error states, and visual checks plus owner click-through are complete.
 
 ### Phase 1 — Foundation and developer experience
 - Complete gateway hardening, integration tests and safe release evidence.
@@ -67,9 +72,9 @@
 
 1. Recheck and complete PR #13 gateway timeout/integration work; verify tests actually exercise route behavior and timeout/fallback semantics.
 2. Recheck PR #16 lightweight PR CI + scheduled/manual release validation. Keep fast PR checks lightweight; comprehensive validation stays at release/stage boundaries.
-3. Recheck PR #15 and include this competitive scope, feature matrix and jobs map in its authoritative documentation.
+3. PR #15 is merged; keep the competitive benchmark and jobs map authoritative and update status only when evidence changes.
 4. Run a fresh independent review of the current gateway slice; fix any confirmed high-impact findings before merge.
-5. Complete the PE design stage: jobs map, navigation, two visual directions, approved tokens/components and high-fidelity key screens before broad feature expansion.
+5. Complete the PE design stage using `design-taste-frontend` plus PE `ui-design`: deal the visual system, build the in-repo token/primitive kit, then implement and review real app screens. Figma is not part of this workflow.
 6. Build Phase 1 in small vertical PRs: model/provider detail and metadata, then playground improvements, then developer docs/onboarding.
 7. Continue through routing, observability, multimodal/provider independence, governance/billing and developer ecosystem in the phase order above.
 
