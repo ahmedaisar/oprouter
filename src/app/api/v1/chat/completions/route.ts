@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateApiKey } from "@/lib/api-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { estimatePromptTokens, getMonthlyTokenLimit } from "@/lib/usage-quota";
+import { createRateLimitHeaders, getGatewayRateLimit } from "@/lib/gateway-rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -15,11 +16,9 @@ export async function POST(request: Request) {
   const apiKey = await authenticateApiKey(request).catch(() => null);
   if (!apiKey) return error("Invalid or revoked API key.", 401);
 
-  const configuredRateLimit = process.env.GATEWAY_RATE_LIMIT_PER_MINUTE?.trim();
-  const rateLimit = configuredRateLimit ? Number(configuredRateLimit) : 60;
-  if (!Number.isSafeInteger(rateLimit) || rateLimit < 1 || rateLimit > 10000) {
-    return error("Gateway rate limit configuration is invalid.", 503);
-  }
+  let rateLimit: number;
+  try { rateLimit = getGatewayRateLimit(); }
+  catch { return error("Gateway rate limit configuration is invalid.", 503); }
   const admin = createAdminClient();
   const { data: rateData, error: rateError } = await admin.rpc("consume_gateway_rate_limit", {
     p_api_key_id: apiKey.id,
@@ -29,11 +28,7 @@ export async function POST(request: Request) {
   const rate = Array.isArray(rateData) ? rateData[0] : null;
   if (rateError || !rate) return error("Unable to verify API key rate limit.", 503);
   const resetAt = new Date(rate.reset_at);
-  const rateHeaders = {
-    "X-RateLimit-Limit": String(rateLimit),
-    "X-RateLimit-Remaining": String(rate.remaining),
-    "X-RateLimit-Reset": String(Math.ceil(resetAt.getTime() / 1000))
-  };
+  const rateHeaders = createRateLimitHeaders(rateLimit, rate.remaining, resetAt);
   if (!rate.allowed) {
     return NextResponse.json(
       { error: { message: "API key request rate limit exceeded.", type: "rate_limit_error", code: 429 } },
