@@ -24,7 +24,7 @@ export async function authenticateApiKey(request: Request): Promise<Authenticate
   const { data, error } = await admin.from("api_keys")
     .select("id,user_id,key_hash,model_allowlist,monthly_token_limit")
     .eq("key_prefix", prefix).is("revoked_at", null).maybeSingle();
-  if (error || !data) return null;
+  if (error || !data) { console.error("API_KEY_LOOKUP_RESULT", { errorCode: error?.code, errorMessage: error?.message, hasData: Boolean(data) }); return null; }
   const actual = Buffer.from(hashApiKey(value), "hex");
   const expected = Buffer.from(data.key_hash, "hex");
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
