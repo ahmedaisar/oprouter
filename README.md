@@ -1,15 +1,17 @@
 # OpRouter
 
-A Next.js App Router workspace and OpenAI-compatible AI gateway powered by OpenRouter.
+A developer-first AI model platform in development: discover, compare, route, integrate and operate models through one unified workspace and API.
+
+**Current implementation status:** the app currently includes a Next.js workspace, a basic model catalogue and text playground, Supabase authentication, activity/settings, API-key management and an OpenAI-compatible chat-completions gateway. It is not yet at OpenRouter feature parity. The competitive scope and phased roadmap are documented below.
 
 ## Stack
 - Next.js 15 App Router and TypeScript
 - React 19
-- OpenRouter API (server-side provider proxy)
 - Supabase Auth and Postgres
+- OpenRouter is the current server-side upstream integration; the target architecture is provider-neutral and will add direct provider adapters incrementally.
 
 ## Local development
-1. Install Node.js 20 or newer.
+1. Install Node.js 20 or newer (runtime floor will be aligned with the CI/Vercel runtime in the CI PR).
 2. Copy `.env.example` to `.env.local`.
 3. Set `OPENROUTER_API_KEY` server-side.
 4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to enable accounts.
@@ -21,7 +23,7 @@ A Next.js App Router workspace and OpenAI-compatible AI gateway powered by OpenR
 
 ## Routes
 - `/` — workspace overview
-- `/models` — live model catalogue
+- `/models` — model catalogue
 - `/playground` — multi-model streaming comparison
 - `/login` — sign-in and sign-up
 - `/activity` — usage history and monthly allowance
@@ -55,19 +57,21 @@ Usage events are ingested server-side from provider-reported token and cost meta
 - Model allowlists are enforced server-side. Revocation takes effect on the next request.
 - The API gateway requires Supabase Auth and a configured service-role key. Local/demo browser playground mode remains separate.
 
-## Validation
-```bash
-npm run lint
-npm run typecheck
-npm run build
-```
+## Product direction
+OpRouter's goal is broad capability parity with the OpenRouter web and API experience, with a developer-first advantage in explainable routing, reproducible request replay, built-in model evaluation, local-first debugging, environment-aware controls and portability.
 
-## Project documentation
-
-- [Product plan and phase status](docs/product/plan.md)
+- [Competitive benchmark and capability matrix](docs/product/competitive-benchmark.md)
+- [Product plan and phased roadmap](docs/product/plan.md)
 - [System architecture](docs/system/architecture.md)
 - [User and API flows](docs/system/flows.md)
 - [Permissions and data access](docs/system/permissions.md)
 - [Environment variables](docs/system/variables.md)
 - [Test coverage map](docs/system/coverage.md)
 - [Release and environment record](docs/RELEASE.md)
+
+## Validation
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
