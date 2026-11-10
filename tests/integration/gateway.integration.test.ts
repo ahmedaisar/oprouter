@@ -68,8 +68,8 @@ before(async () => {
       return;
     }
     const body = await readJson(req);
-    if (body.stream === false) {
-      json(res, 200, { id: "chatcmpl-test", model: body.model, choices: [{message:{role:"assistant",content:"ok"}}], usage: {prompt_tokens: 3, completion_tokens: 2, total_tokens: 5} });
+    if ((body as {stream?:boolean}).stream === false) {
+      json(res, 200, { id: "chatcmpl-test", model: (body as {model?:string}).model, choices: [{message:{role:"assistant",content:"ok"}}], usage: {prompt_tokens: 3, completion_tokens: 2, total_tokens: 5} });
       return;
     }
     res.writeHead(200, { "content-type": "text/event-stream" });
@@ -113,7 +113,7 @@ before(async () => {
       }
       if (req.url === "/chat/completions" && req.method === "POST") {
         providerCalls++;
-        const body = await readJson(req);
+        const body = await readJson(req) as {stream?:boolean; model?:string};
         if (providerMode === "delay") await new Promise(resolve => setTimeout(resolve, 100));
         if (providerMode === "invalid-json") {
           res.writeHead(200,{"content-type":"application/json"}); res.end("{bad json"); return;
@@ -151,7 +151,8 @@ before(async () => {
 
 after(async () => {
   const runtime = globalThis as typeof globalThis & { __originalFetch?: typeof fetch };
-  if (runtime.__originalFetch) globalThis.fetch=runtime.__originalFetch;
+  const originalServerFetch = runtime.__originalFetch;
+  if (originalServerFetch) globalThis.fetch=originalServerFetch;
   await new Promise<void>(resolve => server.close(()=>resolve()));
 });
 
