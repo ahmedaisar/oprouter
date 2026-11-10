@@ -55,7 +55,7 @@ export default async function ActivityPage() {
       quotaUnavailable = true;
     }
   } catch {
-    quotaUnavailable = quotaConfigured;
+    quotaUnavailable = true;
   }
 
   const used = Number(quota?.used_tokens ?? 0);
