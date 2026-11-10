@@ -22,7 +22,7 @@
 - Existing gateway controls: hashed API keys, optional model allowlists, monthly token quotas/reservations and persistent per-key fixed-window rate limits.
 - Not yet proven: production authenticated/provider flow, complete RPC privilege/RLS matrix, route fallback, direct provider adapters, multimodal endpoints, billing ledger, BYOK, workspaces, guardrails, SDKs, CLI, MCP, complete analytics and production readiness.
 - PR #15 (competitive product plan and system documentation) merged to `main` on 2026-11-10.
-- PR #13 remains open with configurable provider timeout and deterministic timeout/quota-cleanup integration coverage; the latest exact-head CI run is pending at the time of this update.
+- PR #13 remains open with configurable provider timeout and deterministic timeout/quota-cleanup integration coverage; exact-head CI passed on commit `0a7cce5807955d98245ccbce8f873ec01e532a73`. Independent review and merge are still outstanding.
 - PR #16 remains open with fast PR checks and separate scheduled/manual comprehensive validation. Its earlier fast-check run passed; recheck the exact current head before merging.
 - Current status is not feature parity. See the competitive benchmark for capability-by-capability state.
 
