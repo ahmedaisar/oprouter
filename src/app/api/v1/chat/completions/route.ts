@@ -3,6 +3,7 @@ import { authenticateApiKey } from "@/lib/api-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { estimatePromptTokens, getMonthlyTokenLimit } from "@/lib/usage-quota";
 import { createRateLimitHeaders, getGatewayRateLimit } from "@/lib/gateway-rate-limit";
+import { getProviderTimeoutMs } from "@/lib/provider-timeout";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -52,6 +53,9 @@ export async function POST(request: Request) {
   let workspaceLimit: number | null;
   try { workspaceLimit = getMonthlyTokenLimit(); }
   catch { return error("Workspace quota configuration is invalid.", 503); }
+  let timeoutMs: number;
+  try { timeoutMs = getProviderTimeoutMs(); }
+  catch { return error("Gateway provider timeout configuration is invalid.", 503); }
   let reservationId: string | null = null;
   if (workspaceLimit !== null || apiKey.monthly_token_limit !== null) {
     const { data, error: reserveError } = await admin.rpc("reserve_gateway_quota", {
@@ -63,7 +67,6 @@ export async function POST(request: Request) {
     if (reserveError || !quota?.allowed || !quota.reservation_id) return error(reserveError ? "Unable to verify token quota." : "Monthly token quota exceeded.", reserveError ? 503 : 429);
     reservationId = quota.reservation_id;
   }
-  const timeoutMs = 120_000;
   const upstreamSignal = AbortSignal.any([request.signal, AbortSignal.timeout(timeoutMs)]);
   try {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
