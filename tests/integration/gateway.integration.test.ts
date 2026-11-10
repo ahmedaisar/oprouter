@@ -221,11 +221,18 @@ test("enforces per-key rate limits with HTTP 429 and Retry-After", async () => {
 });
 
 test("releases quota reservations when the provider rejects a request", async () => {
-  // No quota reservation is configured for this API key; this test verifies a provider error response.
-  providerStatus=503;
-  const response=await invoke();
-  assert.equal(response.status,503);
-  providerStatus=200;
+  const record = records.get(validKey.slice(0, 17))!;
+  records.set(validKey.slice(0, 17), { ...record, monthly_token_limit: 1000 });
+  const releasesBefore = releaseCalls;
+  providerStatus = 503;
+  try {
+    const response = await invoke();
+    assert.equal(response.status, 503);
+    assert.ok(releaseCalls > releasesBefore, "quota reservation should be released after provider rejection");
+  } finally {
+    providerStatus = 200;
+    records.set(validKey.slice(0, 17), record);
+  }
 });
 
 test("enforces model allowlists before provider requests", async () => {
