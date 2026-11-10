@@ -61,3 +61,13 @@ npm run lint
 npm run typecheck
 npm run build
 ```
+
+## Project documentation
+
+- [Product plan and phase status](docs/product/plan.md)
+- [System architecture](docs/system/architecture.md)
+- [User and API flows](docs/system/flows.md)
+- [Permissions and data access](docs/system/permissions.md)
+- [Environment variables](docs/system/variables.md)
+- [Test coverage map](docs/system/coverage.md)
+- [Release and environment record](docs/RELEASE.md)
