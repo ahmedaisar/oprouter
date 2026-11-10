@@ -1,1 +1,5 @@
-/* Publishing source file; full implementation is committed in the local workspace and mirrored here. */
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ status: "ok" });
+}
