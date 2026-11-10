@@ -1,6 +1,6 @@
 # OpRouter product plan
 
-**Product objective:** compete with the complete OpenRouter platform, while making the product materially more developer-friendly. This is a staged product ambition, not a claim of current feature parity. The source-backed capability matrix and research notes live in [competitive-benchmark.md](./competitive-benchmark.md).
+**Product objective:** compete with the complete OpenRouter platform, while making the product materially more developer-friendly. This is a staged product ambition, not a claim of current feature parity. The source-backed capability matrix and research notes live in [competitive-benchmark.md](./competitive-benchmark.md). The core developer jobs and screen map live in [jobs-map.md](./jobs-map.md).
 
 ## Product shape and decisions
 
@@ -67,7 +67,7 @@
 
 1. Recheck and complete PR #13 gateway timeout/integration work; verify tests actually exercise route behavior and timeout/fallback semantics.
 2. Recheck PR #16 lightweight PR CI + scheduled/manual release validation. Keep fast PR checks lightweight; comprehensive validation stays at release/stage boundaries.
-3. Recheck PR #15 and include this competitive scope and feature matrix in its authoritative documentation.
+3. Recheck PR #15 and include this competitive scope, feature matrix and jobs map in its authoritative documentation.
 4. Run a fresh independent review of the current gateway slice; fix any confirmed high-impact findings before merge.
 5. Complete the PE design stage: jobs map, navigation, two visual directions, approved tokens/components and high-fidelity key screens before broad feature expansion.
 6. Build Phase 1 in small vertical PRs: model/provider detail and metadata, then playground improvements, then developer docs/onboarding.
