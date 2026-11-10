@@ -18,7 +18,7 @@ alter table public.usage_events enable row level security;
 alter table public.usage_events force row level security;
 
 revoke all on public.usage_events from anon, public;
-grant select, insert on public.usage_events to authenticated;
+grant select on public.usage_events to authenticated;
 
 drop policy if exists "Users can read their own usage" on public.usage_events;
 create policy "Users can read their own usage"
