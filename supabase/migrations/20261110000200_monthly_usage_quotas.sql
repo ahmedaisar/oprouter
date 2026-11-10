@@ -34,7 +34,7 @@ language plpgsql
 security definer
 set search_path = pg_catalog, public
 set row_security = off
-as $
+as $$
 declare
   v_month_start timestamptz := date_trunc('month', now() at time zone 'UTC') at time zone 'UTC';
   v_used_tokens bigint := 0;
@@ -97,7 +97,7 @@ language sql
 security definer
 set search_path = pg_catalog, public
 set row_security = off
-as $
+as $$
   delete from public.usage_reservations
    where user_id = p_user_id and id = p_reservation_id;
 $$;
@@ -116,7 +116,7 @@ language plpgsql
 security definer
 set search_path = pg_catalog, public
 set row_security = off
-as $
+as $$
 declare
   v_month_start timestamptz := date_trunc('month', now() at time zone 'UTC') at time zone 'UTC';
 begin
