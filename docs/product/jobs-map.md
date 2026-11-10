@@ -53,7 +53,7 @@ For every screen, specify:
 ## Design-stage acceptance
 
 1. Owner reviews and accepts or changes the job map and navigation.
-2. Produce two visual directions in the real design tokens for the key screens; owner chooses one.
-3. Establish `design/tokens.css`, `design/kit.css` and a kit README before implementing new screens.
-4. Implement first screens from the kit, with populated and empty states.
-5. Run the UI-design walkthrough, screenshot critique and scored audit before owner click-through.
+2. Use Taste Skill `design-taste-frontend` (software / AI developer-tool page type) to deal the visual direction and frontend craft. Figma is explicitly not used for OpRouter UI.
+3. Establish `design/tokens.css`, `design/kit.css` and `design/README.md` before implementing new screens. The tokens come from the Taste deal and measured app requirements; primitives use tokens only.
+4. Implement first screens from the kit, with realistic populated, first-use empty, no-results, loading, error and permission states. Label fixture/sample data clearly; never invent production metrics, providers or user activity.
+5. Run the Taste checker/finish gate where its framework workflow applies, plus the PE `ui-design` walkthrough, screenshot critique at 1440/768/390 and scored audit before owner click-through. For dense authenticated app screens, the PE app-screen method governs section density and state semantics; Taste's marketing-page one-section-per-screen rule is not blindly imposed.
