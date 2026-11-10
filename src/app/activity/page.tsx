@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 type UsageEvent = { id: string; model: string; status: string; total_tokens: number; estimated_cost: number; created_at: string };
