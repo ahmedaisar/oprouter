@@ -23,6 +23,7 @@ const rateCounts = new Map<string, { start: number; count: number }>();
 let providerStatus = 200;
 let providerMode: "normal" | "delay" | "stream-delay" | "invalid-json" = "normal";
 let providerCalls = 0;
+let releaseCalls = 0;
 
 function json(res: import("node:http").ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": "application/json" });
@@ -110,6 +111,7 @@ before(async () => {
         return json(res,200,[{allowed:true,reservation_id:"reservation-test"}]);
       }
       if (req.url === "/rest/v1/rpc/release_usage_reservation" && req.method === "POST") {
+        releaseCalls++;
         res.writeHead(204); res.end(); return;
       }
       if (req.url === "/rest/v1/usage_events" && req.method === "POST") {
@@ -258,4 +260,36 @@ test("rejects malformed provider JSON and returns a gateway error", async () => 
   const response=await invoke();
   assert.equal(response.status,502);
   providerMode="normal";
+});
+
+
+test("returns 504 when a non-stream provider request exceeds its timeout", async () => {
+  process.env.OPENROUTER_TIMEOUT_MS = "30";
+  providerMode = "delay";
+  const response = await invoke();
+  assert.equal(response.status, 504);
+  assert.match((await response.json()).error.message, /timed out/i);
+  providerMode = "normal";
+  delete process.env.OPENROUTER_TIMEOUT_MS;
+});
+
+test("emits a terminal SSE timeout event and releases quota after stream headers", async () => {
+  const record = records.get(validKey.slice(0, 17))!;
+  records.set(validKey.slice(0, 17), { ...record, monthly_token_limit: 1000 });
+  const releasesBefore = releaseCalls;
+  process.env.OPENROUTER_TIMEOUT_MS = "30";
+  providerMode = "stream-delay";
+  try {
+    const response = await invoke({ ...requestBody, stream: true });
+    assert.equal(response.status, 200);
+    const body = await response.text();
+    assert.match(body, /"type":"timeout_error"/);
+    assert.match(body, /Model provider request timed out/);
+    assert.match(body, /data: \\[DONE\\]/);
+    assert.ok(releaseCalls > releasesBefore, "quota reservation should be released after a stream timeout");
+  } finally {
+    providerMode = "normal";
+    delete process.env.OPENROUTER_TIMEOUT_MS;
+    records.set(validKey.slice(0, 17), record);
+  }
 });
