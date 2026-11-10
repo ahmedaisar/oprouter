@@ -56,7 +56,10 @@ export async function POST(request: Request) {
     if (body.stream === false) {
       const raw = await new Response(upstream.body).text();
       let parsed: { usage?: Usage };
-      try { parsed = JSON.parse(raw); } catch { return error("Provider returned an invalid response.", 502); }
+      try { parsed = JSON.parse(raw); } catch {
+        if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
+        return error("Provider returned an invalid response.", 502);
+      }
       const usage = parsed.usage ?? {};
       await persist(admin, apiKey.user_id, apiKey.id, body.model, usage, reservationId);
       return NextResponse.json(parsed);
@@ -64,19 +67,47 @@ export async function POST(request: Request) {
     const usage: Usage = {};
     const decoder = new TextDecoder();
     let pending = "";
-    const stream = new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
-        pending += decoder.decode(chunk, { stream: true });
-        const lines = pending.split(/\r?\n/); pending = lines.pop() ?? "";
-        for (const line of lines) readUsage(line, usage);
-        controller.enqueue(chunk);
+    let finalized = false;
+    const finalize = async () => {
+      if (finalized) return;
+      finalized = true;
+      pending += decoder.decode();
+      if (pending) readUsage(pending, usage);
+      await persist(admin, apiKey.user_id, apiKey.id, body.model!, usage, reservationId);
+    };
+    const reader = upstream.body.getReader();
+    const stream = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            await finalize();
+            controller.close();
+            return;
+          }
+          pending += decoder.decode(value, { stream: true });
+          const lines = pending.split(/\r?\n/);
+          pending = lines.pop() ?? "";
+          for (const line of lines) readUsage(line, usage);
+          controller.enqueue(value);
+        } catch (cause) {
+          if (!finalized) {
+            finalized = true;
+            if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
+          }
+          controller.error(cause);
+        }
       },
-      async flush() {
-        pending += decoder.decode(); if (pending) readUsage(pending, usage);
-        await persist(admin, apiKey.user_id, apiKey.id, body.model!, usage, reservationId);
+      async cancel(reason) {
+        try { await reader.cancel(reason); } finally {
+          if (!finalized) {
+            finalized = true;
+            if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
+          }
+        }
       }
     });
-    return new Response(upstream.body.pipeThrough(stream), { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
+    return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
   } catch {
     if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
     return error("Unable to reach the model provider.", 502);
@@ -90,7 +121,10 @@ function readUsage(line: string, usage: Usage) {
 }
 async function persist(admin: ReturnType<typeof createAdminClient>, userId: string, apiKeyId: string, model: string, usage: Usage, reservationId: string | null) {
   const hasUsage = [usage.prompt_tokens, usage.completion_tokens, usage.total_tokens].some((v) => typeof v === "number" && Number.isFinite(v));
-  if (!hasUsage) return; // Reservation expires after two hours if the provider omits usage.
+  if (!hasUsage) {
+    if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: userId, p_reservation_id: reservationId });
+    return;
+  }
   const prompt = Math.max(0, Math.trunc(usage.prompt_tokens ?? 0));
   const completion = Math.max(0, Math.trunc(usage.completion_tokens ?? 0));
   const total = Math.max(0, Math.trunc(usage.total_tokens ?? prompt + completion));
