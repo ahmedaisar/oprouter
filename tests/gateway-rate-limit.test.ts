@@ -5,11 +5,13 @@ import { createRateLimitHeaders, getGatewayRateLimit } from "../src/lib/gateway-
 test("gateway rate limit defaults to 60 and accepts configured whole numbers", () => {
   assert.equal(getGatewayRateLimit(undefined), 60);
   assert.equal(getGatewayRateLimit(" 120 "), 120);
+  assert.equal(getGatewayRateLimit(""), 60);
+  assert.equal(getGatewayRateLimit("   "), 60);
   assert.equal(getGatewayRateLimit("1"), 1);
 });
 
 test("gateway rate limit rejects invalid or unsafe values", () => {
-  for (const invalid of ["", "0", "-1", "1.5", "NaN", "10001", "9007199254740992"]) {
+  for (const invalid of ["0", "-1", "1.5", "NaN", "10001", "9007199254740992"]) {
     assert.throws(() => getGatewayRateLimit(invalid));
   }
 });
