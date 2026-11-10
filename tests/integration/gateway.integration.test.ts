@@ -84,7 +84,7 @@ before(async () => {
   server = createServer(async (req, res) => {
     try {
       if (new URL(req.url ?? "/", "http://local").pathname === "/rest/v1/api_keys" && req.method === "GET") {
-        const prefix = new URL(req.url, "http://local").searchParams.get("key_prefix")?.replace(/^eq\./, "");
+        const prefix = new URL(req.url ?? "/", "http://local").searchParams.get("key_prefix")?.replace(/^eq\./, "");
         const record = records.get(prefix ?? "");
         return json(res, 200, record ? [record] : []);
       }
