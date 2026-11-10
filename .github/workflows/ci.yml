@@ -34,5 +34,7 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+      - name: Integration tests
+        run: npm run test:integration
       - name: Production build
         run: npm run build
