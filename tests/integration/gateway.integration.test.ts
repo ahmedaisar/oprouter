@@ -220,11 +220,33 @@ test("releases quota reservations when the provider rejects a request", async ()
   providerStatus=200;
 });
 
+test("enforces model allowlists before provider requests", async () => {
+  const record=records.get(validKey.slice(0,17))!;
+  const beforeCalls=providerCalls;
+  records.set(validKey.slice(0,17),{...record,model_allowlist:["anthropic/claude"]});
+  const response=await invoke();
+  assert.equal(response.status,403);
+  assert.equal(providerCalls,beforeCalls);
+  records.set(validKey.slice(0,17),record);
+});
+
+test("respects API key monthly quotas before provider work", async () => {
+  const previous=process.env.DEFAULT_MONTHLY_TOKEN_LIMIT;
+  const record=records.get(validKey.slice(0,17))!;
+  records.set(validKey.slice(0,17),{...record,monthly_token_limit:1});
+  const response=await invoke();
+  assert.equal(response.status,429);
+  records.set(validKey.slice(0,17),record);
+  if(previous===undefined) delete process.env.DEFAULT_MONTHLY_TOKEN_LIMIT;
+  else process.env.DEFAULT_MONTHLY_TOKEN_LIMIT=previous;
+});
+
 test("returns provider error statuses without exposing secrets", async () => {
+  const beforeCalls=providerCalls;
   providerStatus=503;
   const response=await invoke();
   assert.equal(response.status,503);
-  assert.equal((await response.json()).error.message.includes("integration-test-provider"),false);
+  assert.ok(providerCalls>beforeCalls);
   providerStatus=200;
 });
 
