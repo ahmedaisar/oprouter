@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "feat/**"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,17 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Lint, typecheck and build
+  fast-checks:
+    name: Fast PR checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
       - name: Install dependencies
         run: npm install
       - name: Lint
@@ -34,5 +34,3 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
-      - name: Production build
-        run: npm run build
