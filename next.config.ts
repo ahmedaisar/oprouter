@@ -1,1 +1,6 @@
-/* Publishing source file; full implementation is committed in the local workspace and mirrored here. */
+import type { NextConfig } from "next";
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false
+};
+export default nextConfig;
