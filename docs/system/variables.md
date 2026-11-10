@@ -9,7 +9,6 @@
 | `NEXT_PUBLIC_APP_URL` | Recommended | Public | App URL sent as provider HTTP referer |
 | `DEFAULT_MONTHLY_TOKEN_LIMIT` | Optional | Server config | Positive integer workspace token cap; blank disables shared cap |
 | `GATEWAY_RATE_LIMIT_PER_MINUTE` | Optional | Server config | Positive integer 1–10,000; default 60 requests per key per 60-second window |
-| `OPENROUTER_API_URL` | Test/local override only if supported | Server config | Upstream endpoint override used by integration tests |
 
 Never prefix a secret with `NEXT_PUBLIC_`. Do not commit `.env.local`, provider keys, service-role keys or production connection strings. Keep development and production credentials separate.
 
