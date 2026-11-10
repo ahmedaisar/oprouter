@@ -193,7 +193,7 @@ test("returns OpenAI-compatible non-stream response and rate headers", async () 
 test("returns SSE frames for streaming requests", async () => {
   const response=await invoke({...requestBody,stream:true});
   assert.equal(response.status,200);
-  assert.match(response.headers.get("content-type")??"","text/event-stream");
+  assert.match(response.headers.get("content-type")??"",/text\\/event-stream/);
   const text=await response.text();
   assert.match(text,/data: \[DONE\]/);
   assert.match(text,/"content":"ok"/);
