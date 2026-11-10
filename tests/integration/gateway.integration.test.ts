@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { createServer, type Server } from "node:http";
-import { once } from "node:events";
 import { AddressInfo } from "node:net";
 
 type ApiKeyRecord = {
@@ -22,20 +21,18 @@ const rateCounts = new Map<string, { start: number; count: number }>();
 let providerStatus = 200;
 let providerMode: "normal" | "delay" | "stream-delay" | "invalid-json" = "normal";
 let providerCalls = 0;
-let rateLimit = 60;
-let reservationAllowed = true;
 
 function json(res: import("node:http").ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(JSON.stringify(body));
 }
-function readJson(req: import("node:http").IncomingMessage): Promise<any> {
+function readJson(req: import("node:http").IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let raw = "";
     req.setEncoding("utf8");
     req.on("data", chunk => raw += chunk);
     req.on("end", () => {
-      try { resolve(JSON.parse(raw)); } catch (e) { reject(e); }
+      try { resolve(JSON.parse(raw) as unknown); } catch (e) { reject(e); }
     });
     req.on("error", reject);
   });
@@ -93,7 +90,7 @@ before(async () => {
         res.writeHead(204); res.end(); return;
       }
       if (req.url === "/rest/v1/rpc/consume_gateway_rate_limit" && req.method === "POST") {
-        const body = await readJson(req);
+        const body = await readJson(req) as { p_api_key_id: string; p_limit: number; p_window_seconds: number };
         const now = Date.now();
         const current = rateCounts.get(body.p_api_key_id);
         if (!current || now - current.start >= body.p_window_seconds * 1000) {
@@ -103,8 +100,9 @@ before(async () => {
         return json(res, 200, [{ allowed: result.count <= body.p_limit, remaining: Math.max(0, body.p_limit-result.count), reset_at: new Date(result.start + body.p_window_seconds*1000).toISOString() }]);
       }
       if (req.url === "/rest/v1/rpc/reserve_gateway_quota" && req.method === "POST") {
-        const body = await readJson(req);
-        if (!reservationAllowed) return json(res,200,[{allowed:false,reservation_id:null}]);
+        await readJson(req);
+        const quotaRecord = records.get(validKey.slice(0,17));
+        if ((quotaRecord?.monthly_token_limit ?? 0) === 1) return json(res,200,[{allowed:false,reservation_id:null}]);
         return json(res,200,[{allowed:true,reservation_id:"reservation-test"}]);
       }
       if (req.url === "/rest/v1/rpc/release_usage_reservation" && req.method === "POST") {
@@ -148,11 +146,12 @@ before(async () => {
     }
     return originalFetch(input,init);
   };
-  (globalThis as any).__originalFetch=originalFetch;
+  (globalThis as typeof globalThis & { __originalFetch?: typeof fetch }).__originalFetch=originalFetch;
 });
 
 after(async () => {
-  if ((globalThis as any).__originalFetch) globalThis.fetch=(globalThis as any).__originalFetch;
+  const runtime = globalThis as typeof globalThis & { __originalFetch?: typeof fetch };
+  if (runtime.__originalFetch) globalThis.fetch=runtime.__originalFetch;
   await new Promise<void>(resolve => server.close(()=>resolve()));
 });
 
@@ -231,14 +230,11 @@ test("enforces model allowlists before provider requests", async () => {
 });
 
 test("respects API key monthly quotas before provider work", async () => {
-  const previous=process.env.DEFAULT_MONTHLY_TOKEN_LIMIT;
   const record=records.get(validKey.slice(0,17))!;
   records.set(validKey.slice(0,17),{...record,monthly_token_limit:1});
   const response=await invoke();
   assert.equal(response.status,429);
   records.set(validKey.slice(0,17),record);
-  if(previous===undefined) delete process.env.DEFAULT_MONTHLY_TOKEN_LIMIT;
-  else process.env.DEFAULT_MONTHLY_TOKEN_LIMIT=previous;
 });
 
 test("returns provider error statuses without exposing secrets", async () => {
