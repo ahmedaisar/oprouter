@@ -29,6 +29,6 @@
 - 2026-11-10: PR #13 opened for stream timeout SSE handling and gateway integration tests; first CI run 42802898765 failed at lint. Fixes are being applied and must rerun before merge.
 - 2026-11-10: PR #14 opened against PR #13's branch. It does not trigger the main-targeted PR workflow; fixes are being folded into PR #13 to get normal CI evidence.
 - 2026-11-10: PR #15 merged (commit 5b9b30345a3cd9b9cf8ee6279799d9a75783b9c1), adding the competitive benchmark, capability matrix, product roadmap and developer jobs map.
-- 2026-11-10: PR #13 extended with configurable upstream timeout and integration coverage for non-stream timeout, post-header SSE timeout and quota reservation release; exact-head CI is pending and merge remains blocked pending a clean review.
+- 2026-11-10: PR #13 extended with configurable upstream timeout and integration coverage for non-stream timeout, post-header SSE timeout and quota reservation release; exact-head CI passed on `0a7cce5807955d98245ccbce8f873ec01e532a73`. Merge remains blocked pending independent review.
 - 2026-11-10: PR #16 proposes lightweight PR CI (lint/typecheck/unit tests) with comprehensive scheduled/manual release validation and native Vercel deployments; exact current-head validation and review remain open.
 - 2026-11-10: Vercel preview deployments reported the free-plan daily deployment limit (>100 API deployments/day). This is an account deployment quota, not an application build failure. Avoid repeated deployment retries until the quota resets or the account limit changes.
