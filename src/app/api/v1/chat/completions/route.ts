@@ -13,7 +13,7 @@ function error(message: string, status: number) {
   return NextResponse.json({ error: { message, type: status === 401 ? "authentication_error" : "invalid_request_error", code: status } }, { status });
 }
 export async function POST(request: Request) {
-  const apiKey = await authenticateApiKey(request).catch((cause) => { console.error("GATEWAY_AUTH_EXCEPTION", cause instanceof Error ? cause.message : String(cause)); return null; });
+  const apiKey = await authenticateApiKey(request).catch(() => null);
   if (!apiKey) return error("Invalid or revoked API key.", 401);
 
   let rateLimit: number;
