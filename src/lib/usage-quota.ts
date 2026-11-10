@@ -4,7 +4,7 @@ export function getMonthlyTokenLimit(): number | null {
   const raw = process.env.DEFAULT_MONTHLY_TOKEN_LIMIT?.trim();
   if (!raw) return null;
 
-  if (!/^\\d+$/.test(raw)) {
+  if (!/^\d+$/.test(raw)) {
     throw new Error("DEFAULT_MONTHLY_TOKEN_LIMIT must be a positive whole number.");
   }
   const limit = Number(raw);
