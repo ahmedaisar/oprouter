@@ -42,9 +42,11 @@ export async function POST(request: Request) {
     if (reserveError || !quota?.allowed || !quota.reservation_id) return error(reserveError ? "Unable to verify token quota." : "Monthly token quota exceeded.", reserveError ? 503 : 429);
     reservationId = quota.reservation_id;
   }
+  const timeoutMs = 120_000;
+  const upstreamSignal = AbortSignal.any([request.signal, AbortSignal.timeout(timeoutMs)]);
   try {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST", signal: request.signal,
+      method: "POST", signal: upstreamSignal,
       headers: { Authorization: `Bearer ${providerKey}`, "Content-Type": "application/json", "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000", "X-Title": "OpRouter Gateway" },
       body: JSON.stringify({ ...body, max_tokens: maxTokens, stream: body.stream !== false, ...(body.stream === false ? {} : { stream_options: { include_usage: true } }) })
     });
@@ -108,8 +110,9 @@ export async function POST(request: Request) {
       }
     });
     return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
-  } catch {
+  } catch (cause) {
     if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
+    if (cause instanceof Error && cause.name === "TimeoutError") return error("Model provider request timed out.", 504);
     return error("Unable to reach the model provider.", 502);
   }
 }
