@@ -14,6 +14,33 @@ function error(message: string, status: number) {
 export async function POST(request: Request) {
   const apiKey = await authenticateApiKey(request).catch(() => null);
   if (!apiKey) return error("Invalid or revoked API key.", 401);
+
+  const configuredRateLimit = process.env.GATEWAY_RATE_LIMIT_PER_MINUTE?.trim();
+  const rateLimit = configuredRateLimit ? Number(configuredRateLimit) : 60;
+  if (!Number.isSafeInteger(rateLimit) || rateLimit < 1 || rateLimit > 10000) {
+    return error("Gateway rate limit configuration is invalid.", 503);
+  }
+  const admin = createAdminClient();
+  const { data: rateData, error: rateError } = await admin.rpc("consume_gateway_rate_limit", {
+    p_api_key_id: apiKey.id,
+    p_limit: rateLimit,
+    p_window_seconds: 60
+  });
+  const rate = Array.isArray(rateData) ? rateData[0] : null;
+  if (rateError || !rate) return error("Unable to verify API key rate limit.", 503);
+  const resetAt = new Date(rate.reset_at);
+  const rateHeaders = {
+    "X-RateLimit-Limit": String(rateLimit),
+    "X-RateLimit-Remaining": String(rate.remaining),
+    "X-RateLimit-Reset": String(Math.ceil(resetAt.getTime() / 1000))
+  };
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: { message: "API key request rate limit exceeded.", type: "rate_limit_error", code: 429 } },
+      { status: 429, headers: { ...rateHeaders, "Retry-After": String(Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000))) } }
+    );
+  }
+
   const providerKey = process.env.OPENROUTER_API_KEY;
   if (!providerKey) return error("Gateway provider is not configured.", 503);
   let body: Body;
@@ -30,7 +57,6 @@ export async function POST(request: Request) {
   let workspaceLimit: number | null;
   try { workspaceLimit = getMonthlyTokenLimit(); }
   catch { return error("Workspace quota configuration is invalid.", 503); }
-  const admin = createAdminClient();
   let reservationId: string | null = null;
   if (workspaceLimit !== null || apiKey.monthly_token_limit !== null) {
     const { data, error: reserveError } = await admin.rpc("reserve_gateway_quota", {
@@ -64,7 +90,7 @@ export async function POST(request: Request) {
       }
       const usage = parsed.usage ?? {};
       await persist(admin, apiKey.user_id, apiKey.id, body.model, usage, reservationId);
-      return NextResponse.json(parsed);
+      return NextResponse.json(parsed, { headers: rateHeaders });
     }
     const usage: Usage = {};
     const decoder = new TextDecoder();
@@ -109,7 +135,7 @@ export async function POST(request: Request) {
         }
       }
     });
-    return new Response(stream, { headers: { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
+    return new Response(stream, { headers: { ...rateHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
   } catch (cause) {
     if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
     if (cause instanceof Error && cause.name === "TimeoutError") return error("Model provider request timed out.", 504);
