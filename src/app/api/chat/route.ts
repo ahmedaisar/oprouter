@@ -93,6 +93,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Choose a valid model." }, { status: 400 });
   if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 40)
     return NextResponse.json({ error: "Provide between 1 and 40 messages." }, { status: 400 });
+  if (body.max_tokens !== undefined && (typeof body.max_tokens !== "number" || !Number.isFinite(body.max_tokens)))
+    return NextResponse.json({ error: "max_tokens must be a finite number." }, { status: 400 });
+  if (body.temperature !== undefined && (typeof body.temperature !== "number" || !Number.isFinite(body.temperature)))
+    return NextResponse.json({ error: "temperature must be a finite number." }, { status: 400 });
 
   const messages = body.messages.filter((m): m is ChatMessage =>
     !!m && ["system", "user", "assistant"].includes(m.role) &&
