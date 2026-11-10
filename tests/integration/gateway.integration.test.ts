@@ -89,7 +89,7 @@ before(async () => {
         const record = records.get(prefix ?? "");
         return json(res, 200, record ? [record] : []);
       }
-      if (req.url?.startsWith("/rest/v1/api_keys?") && req.method === "PATCH") {
+      if (req.url === "/rest/v1/api_keys" && req.method === "PATCH") {
         res.writeHead(204); res.end(); return;
       }
       if (req.url === "/rest/v1/rpc/consume_gateway_rate_limit" && req.method === "POST") {
@@ -114,8 +114,22 @@ before(async () => {
         res.writeHead(201); res.end(); return;
       }
       if (req.url === "/chat/completions" && req.method === "POST") {
-        const { proxyRequest } = await import("../support/provider-proxy");
-        return proxyRequest(req,res,origin);
+        providerCalls++;
+        const body = await readJson(req);
+        if (providerMode === "delay") await new Promise(resolve => setTimeout(resolve, 100));
+        if (providerMode === "invalid-json") {
+          res.writeHead(200,{"content-type":"application/json"}); res.end("{bad json"); return;
+        }
+        if (providerStatus !== 200) return json(res,providerStatus,{error:{message:"provider error"}});
+        if (body.stream === false) return json(res,200,{id:"chatcmpl-test",choices:[{message:{role:"assistant",content:"ok"}}],usage:{prompt_tokens:3,completion_tokens:2,total_tokens:5}});
+        res.writeHead(200,{"content-type":"text/event-stream"});
+        if (providerMode === "stream-delay") {
+          res.write('data: {"id":"chatcmpl-test","choices":[{"delta":{"content":"hello"}}]}\\n\\n');
+          setTimeout(()=>{if(!res.destroyed)res.end("data: [DONE]\\n\\n");},100);
+          return;
+        }
+        res.end('data: {"id":"chatcmpl-test","choices":[{"delta":{"content":"ok"}}]}\\n\\ndata: {"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}\\n\\ndata: [DONE]\\n\\n');
+        return;
       }
       json(res,404,{message:"not found"});
     } catch {
@@ -206,12 +220,17 @@ test("releases quota reservations when the provider rejects a request", async ()
   providerStatus=200;
 });
 
-test("returns provider timeout as HTTP 504 before streaming headers are sent", async () => {
-  providerMode="delay";
-  const previous=process.env.OPENROUTER_API_URL;
+test("returns provider error statuses without exposing secrets", async () => {
+  providerStatus=503;
   const response=await invoke();
-  // The production timeout is deliberately 120 seconds; only assert normal provider result here.
-  assert.ok([200,502,504].includes(response.status));
+  assert.equal(response.status,503);
+  assert.equal((await response.json()).error.message.includes("integration-test-provider"),false);
+  providerStatus=200;
+});
+
+test("rejects malformed provider JSON and returns a gateway error", async () => {
+  providerMode="invalid-json";
+  const response=await invoke();
+  assert.equal(response.status,502);
   providerMode="normal";
-  process.env.OPENROUTER_API_URL=previous;
 });
