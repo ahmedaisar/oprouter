@@ -86,6 +86,7 @@ before(async () => {
       if (new URL(req.url ?? "/", "http://local").pathname === "/rest/v1/api_keys" && req.method === "GET") {
         const prefix = new URL(req.url ?? "/", "http://local").searchParams.get("key_prefix")?.replace(/^eq\./, "");
         const record = records.get(prefix ?? "");
+        console.log("SUPABASE_KEY_LOOKUP", JSON.stringify({ url: req.url, prefix, keys: [...records.keys()], found: Boolean(record) }));
         return json(res, 200, record ?? null);
       }
       if (new URL(req.url ?? "/", "http://local").pathname === "/rest/v1/api_keys" && req.method === "PATCH") {
