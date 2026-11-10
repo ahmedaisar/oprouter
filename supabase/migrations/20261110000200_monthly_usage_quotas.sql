@@ -11,6 +11,9 @@ create table if not exists public.usage_reservations (
 create index if not exists usage_reservations_user_expiry_idx
   on public.usage_reservations (user_id, expires_at);
 
+-- No browser policies are defined: only trusted server-side functions may access it.
+alter table public.usage_reservations enable row level security;
+
 -- This table and its functions are only for trusted server-side use.
 revoke all on public.usage_reservations from public, anon, authenticated;
 
