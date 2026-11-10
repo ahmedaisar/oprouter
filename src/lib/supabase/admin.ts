@@ -7,6 +7,7 @@ export function createAdminClient() {
     throw new Error("Usage ingestion requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
   }
   return createClient(url, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: globalThis.fetch }
   });
 }
