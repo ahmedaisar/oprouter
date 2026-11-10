@@ -27,26 +27,26 @@ export async function POST(request: Request) {
   if (body.max_tokens !== undefined && (typeof body.max_tokens !== "number" || !Number.isFinite(body.max_tokens) || body.max_tokens < 1)) return error("max_tokens must be a positive number.", 400);
   const maxTokens = Math.min(8192, Math.trunc(body.max_tokens ?? 1200));
   const messages = body.messages;
-  const configuredLimit = getMonthlyTokenLimit();
-  const limits = [configuredLimit, apiKey.monthly_token_limit].filter((v): v is number => v !== null);
-  const monthlyLimit = limits.length ? Math.min(...limits) : null;
+  let workspaceLimit: number | null;
+  try { workspaceLimit = getMonthlyTokenLimit(); }
+  catch { return error("Workspace quota configuration is invalid.", 503); }
+  const admin = createAdminClient();
   let reservationId: string | null = null;
-  if (monthlyLimit) {
-    const admin = createAdminClient();
-    const { data, error: reserveError } = await admin.rpc("reserve_usage_quota", {
-      p_user_id: apiKey.user_id, p_reserved_tokens: estimatePromptTokens(messages) + maxTokens,
-      p_monthly_token_limit: monthlyLimit
+  if (workspaceLimit !== null || apiKey.monthly_token_limit !== null) {
+    const { data, error: reserveError } = await admin.rpc("reserve_gateway_quota", {
+      p_user_id: apiKey.user_id, p_api_key_id: apiKey.id,
+      p_reserved_tokens: estimatePromptTokens(messages) + maxTokens,
+      p_workspace_limit: workspaceLimit, p_key_limit: apiKey.monthly_token_limit
     });
     const quota = Array.isArray(data) ? data[0] : null;
     if (reserveError || !quota?.allowed || !quota.reservation_id) return error(reserveError ? "Unable to verify token quota." : "Monthly token quota exceeded.", reserveError ? 503 : 429);
     reservationId = quota.reservation_id;
   }
-  const admin = createAdminClient();
   try {
     const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST", signal: request.signal,
       headers: { Authorization: `Bearer ${providerKey}`, "Content-Type": "application/json", "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000", "X-Title": "OpRouter Gateway" },
-      body: JSON.stringify({ ...body, max_tokens: maxTokens, stream: true, stream_options: { include_usage: true } })
+      body: JSON.stringify({ ...body, max_tokens: maxTokens, stream: body.stream !== false, ...(body.stream === false ? {} : { stream_options: { include_usage: true } }) })
     });
     if (!upstream.ok || !upstream.body) {
       if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
