@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { createServer, type Server } from "node:http";
 import { AddressInfo } from "node:net";
+import { createHash } from "node:crypto";
 
 type ApiKeyRecord = {
   id: string;
@@ -14,9 +15,10 @@ type ApiKeyRecord = {
 };
 const records = new Map<string, ApiKeyRecord>();
 let server: Server;
+let providerServer: Server;
 let origin: string;
 const validKey = "opk_live_" + "a".repeat(43);
-const validKeyHash = await import("node:crypto").then(({createHash}) => createHash("sha256").update(validKey).digest("hex"));
+const validKeyHash = createHash("sha256").update(validKey).digest("hex");
 const rateCounts = new Map<string, { start: number; count: number }>();
 let providerStatus = 200;
 let providerMode: "normal" | "delay" | "stream-delay" | "invalid-json" = "normal";
@@ -46,7 +48,7 @@ before(async () => {
   process.env.DEFAULT_MONTHLY_TOKEN_LIMIT = "1000000";
   process.env.GATEWAY_RATE_LIMIT_PER_MINUTE = "60";
 
-  const provider = createServer(async (req, res) => {
+  providerServer = createServer(async (req, res) => {
     providerCalls++;
     if (providerMode === "delay") {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -75,8 +77,8 @@ before(async () => {
     res.writeHead(200, { "content-type": "text/event-stream" });
     res.end('data: {"id":"chatcmpl-test","choices":[{"delta":{"content":"ok"}}]}\n\ndata: {"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}\n\ndata: [DONE]\n\n');
   });
-  await new Promise<void>(resolve => provider.listen(0, "127.0.0.1", resolve));
-  origin = `http://127.0.0.1:${(provider.address() as AddressInfo).port}`;
+  await new Promise<void>(resolve => providerServer.listen(0, "127.0.0.1", resolve));
+  origin = `http://127.0.0.1:${(providerServer.address() as AddressInfo).port}`;
   process.env.OPENROUTER_API_URL = `${origin}/chat/completions`;
 
   server = createServer(async (req, res) => {
@@ -152,7 +154,10 @@ before(async () => {
 after(async () => {
   const runtime = globalThis as typeof globalThis & { __originalFetch?: typeof fetch };
   if (runtime.__originalFetch) globalThis.fetch=runtime.__originalFetch;
-  await new Promise<void>(resolve => server.close(()=>resolve()));
+  await Promise.all([
+    new Promise<void>(resolve => server.close(()=>resolve())),
+    new Promise<void>(resolve => providerServer.close(()=>resolve()))
+  ]);
 });
 
 const requestBody = { model:"openai/gpt-4o-mini", messages:[{role:"user",content:"hello"}], stream:false };
