@@ -13,10 +13,18 @@ export function getMonthlyTokenLimit(): number | null {
 }
 
 /**
- * A conservative preflight estimate. The provider's reported usage is stored
- * after streaming; this estimate reserves capacity before the upstream call.
+ * A conservative preflight estimate. ASCII text is estimated at three
+ * characters per token; non-ASCII code points reserve at least one token each.
+ * The provider's reported usage is stored after streaming.
  */
 export function estimatePromptTokens(messages: QuotaMessage[]): number {
-  const characters = messages.reduce((total, message) => total + message.content.length, 0);
-  return Math.max(messages.length, Math.ceil(characters / 3) + messages.length * 4);
+  let estimatedTokens = messages.length * 4;
+
+  for (const message of messages) {
+    for (const character of message.content) {
+      estimatedTokens += (character.codePointAt(0) ?? 0) <= 0x7f ? 1 / 3 : 1;
+    }
+  }
+
+  return Math.max(messages.length, Math.ceil(estimatedTokens));
 }
