@@ -1,19 +1,10 @@
-import Link from "next/link";
+export const dynamic = "force-dynamic";
 
-export default function ActivityPage() {
-  return (
-    <main className="dashboard">
-      <p className="eyebrow">WORKSPACE</p>
-      <h1>Request <span>activity.</span></h1>
-      <p className="intro">Your recent model requests and usage will appear here once request history is connected.</p>
-      <section className="callout">
-        <div>
-          <p className="eyebrow">NO ACTIVITY YET</p>
-          <h2>Start with a model comparison.</h2>
-          <p>Run a prompt in the playground to begin exploring model responses.</p>
-        </div>
-        <Link href="/playground">Open playground ↗</Link>
-      </section>
-    </main>
-  );
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+type UsageEvent = { id: string; model: string; status: string; total_tokens: number; estimated_cost: number; created_at: string };
+export default async function ActivityPage() {
+ const supabase = await createClient();
+ const { data: events, error } = await supabase.from("usage_events").select("id,model,status,total_tokens,estimated_cost,created_at").order("created_at", { ascending: false }).limit(50);
+ return <main className="dashboard"><p className="eyebrow">REQUEST HISTORY</p><h1>Your <span>activity.</span></h1><p className="intro">Usage events associated with your account. Records are protected by Supabase row-level security.</p><section className="callout" style={{marginTop:36,display:"block"}}>{error ? <p role="status">Usage history is not available yet. Apply the Supabase migration and confirm your project configuration.</p> : !events?.length ? <><h2>No usage recorded yet.</h2><p>Usage events will appear here once server-side usage ingestion is enabled.</p><Link href="/playground">Open the playground →</Link></> : <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Date","Model","Status","Tokens","Est. cost"].map(label=><th key={label} style={{textAlign:"left",padding:12,color:"#91a0b4"}}>{label}</th>)}</tr></thead><tbody>{(events as UsageEvent[]).map(item=><tr key={item.id}><td style={{padding:12}}>{new Date(item.created_at).toLocaleString()}</td><td style={{padding:12}}>{item.model}</td><td style={{padding:12}}>{item.status}</td><td style={{padding:12}}>{item.total_tokens.toLocaleString()}</td><td style={{padding:12}}>{"$" + Number(item.estimated_cost).toFixed(6)}</td></tr>)}</tbody></table></div>}</section></main>;
 }

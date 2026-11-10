@@ -7,6 +7,15 @@ export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Add OPENROUTER_API_KEY to the server environment to enable chat." }, { status: 503 });
 
+  // Once Supabase is configured, model requests require an authenticated session.
+  // Local/demo mode remains available when Supabase credentials are intentionally absent.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return NextResponse.json({ error: "Sign in to use the model playground." }, { status: 401 });
+  }
+
   let body: ChatRequest;
   try { body = await request.json() as ChatRequest; }
   catch { return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 }); }
