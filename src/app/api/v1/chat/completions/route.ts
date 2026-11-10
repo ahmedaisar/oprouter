@@ -118,6 +118,13 @@ export async function POST(request: Request) {
             finalized = true;
             if (reservationId) await admin.rpc("release_usage_reservation", { p_user_id: apiKey.user_id, p_reservation_id: reservationId });
           }
+          if (cause instanceof Error && cause.name === "TimeoutError") {
+            controller.enqueue(new TextEncoder().encode(
+              `data: ${JSON.stringify({ error: { message: "Model provider request timed out.", type: "timeout_error", code: 504 } })}\\n\\ndata: [DONE]\\n\\n`
+            ));
+            controller.close();
+            return;
+          }
           controller.error(cause);
         }
       },
