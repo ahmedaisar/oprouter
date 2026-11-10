@@ -1,76 +1,90 @@
 # OpRouter product plan
 
-**Current phase: gateway hardening and release readiness.** This file is the authoritative product roadmap; status claims are kept distinct from planned work and verified production behavior.
+**Product objective:** compete with the complete OpenRouter platform, while making the product materially more developer-friendly. This is a staged product ambition, not a claim of current feature parity. The source-backed capability matrix and research notes live in [competitive-benchmark.md](./competitive-benchmark.md).
 
 ## Product shape and decisions
-- Audience: individual developers integrating OpenAI-compatible model APIs through one managed gateway.
-- Workspace: individual user account; no organization/team model.
-- Identity and billing: Supabase Auth; no billing or paid entitlements.
-- Anonymous public actions: no. Gateway requests require an owner-issued OpRouter API key.
-- Embedded agents: no. Model inference is a server-side provider integration.
-- Member home: `/` (authenticated workspace); `/login` for sign-in.
-- Provider: OpenRouter behind a server-side proxy. Provider credentials never reach browser code.
-- Browser playground remains a product surface; gateway reliability and developer controls take priority over monetization.
-- Default rate limit: 60 requests per API key per fixed 60-second window; `GATEWAY_RATE_LIMIT_PER_MINUTE` overrides it (1–10,000).
-- Workspace monthly token cap: `DEFAULT_MONTHLY_TOKEN_LIMIT`; optional per-key monthly token caps are also supported.
 
-## Phases and completion evidence
+- Product: OpRouter — a developer-first AI model platform to discover, compare, route, integrate and operate models through one unified workspace and API.
+- Competitive scope: broad parity with the OpenRouter web/API experience: model/provider discovery, chat playground, unified API, multimodal capabilities, routing/fallback, BYOK, activity/analytics, budgets, privacy/governance, credits/billing, SDKs, CLI/DevTools and MCP.
+- Differentiator: explainable routing, reproducible request replay, built-in model evaluation, local-first debugging, environment-aware controls, portability and honest performance metadata.
+- Initial beachhead hypothesis: independent developers and small AI product teams. This is not yet validated demand.
+- Workspace: retain personal account support now; design data ownership for future workspace/environment isolation. Team/org roles are later.
+- Identity: Supabase Auth.
+- Current stack: Next.js App Router + TypeScript + Supabase Postgres; Vercel hosting. Keep unless measured constraints require change.
+- Provider architecture: provider-neutral adapter interface. OpenRouter may be an initial upstream for catalogue/inference breadth, but must not be the only supported provider or a permanent architectural dependency.
+- Billing: no live charges or prices until the owner approves a fee model, legal text and reconciliation design.
+- Gateway: retain the existing OpenAI-compatible chat-completions route while expanding the versioned API surface and compatibility matrix.
+- Secrets: provider credentials are server-only and encrypted at rest; never returned to clients or logged.
 
-### 1. Product foundation and playground — done (2026-11-10)
-- Workspace shell, model catalogue, login, playground, settings and activity routes.
-- Multi-model streaming comparison.
-- Evidence: routes and components in `src/app/` and `src/components/`; README usage instructions.
+## Current implementation baseline (2026-11-10)
 
-### 2. Identity, API keys and usage foundations — implemented in code (2026-11-10)
-- Supabase Auth, usage events and workspace quota migrations.
-- Developer API keys: cryptographic random generation, SHA-256 hash at rest, prefix lookup, owner-scoped list/revoke, model allowlist and optional per-key monthly cap.
-- Atomic workspace/per-key quota reservations.
-- Evidence: migrations `20261110000100`–`20261110000400`, `src/lib/api-keys.ts`, `/api/keys`.
-- Caveat: runtime production flow has not been fully exercised with a signed-in user and real provider call.
+- Existing code: Next.js workspace, basic model catalogue, text playground, Supabase auth, activity/settings routes, API key management and an OpenAI-compatible chat-completions gateway.
+- Existing gateway controls: hashed API keys, optional model allowlists, monthly token quotas/reservations and persistent per-key fixed-window rate limits.
+- Not yet proven: production authenticated/provider flow, complete RPC privilege/RLS matrix, route fallback, direct provider adapters, multimodal endpoints, billing ledger, BYOK, workspaces, guardrails, SDKs, CLI, MCP, complete analytics and production readiness.
+- PRs #13, #15 and #16 remain the immediate engineering/documentation queue at the time of this plan update. Recheck live status before merging.
+- Current status is not feature parity. See the competitive benchmark for capability-by-capability state.
 
-### 3. Gateway reliability and security — in progress
-- OpenAI-compatible non-stream and SSE chat completions; validation, model authorization, usage persistence and reservation cleanup.
-- Persistent per-key fixed-window rate limiting shared across serverless instances.
-- Upstream timeout and well-formed terminal SSE timeout event; client cancellation remains distinct.
-- Deterministic integration tests for authentication, validation, model restrictions, rate limits, quotas, provider errors, streaming, timeouts and reservation lifecycle.
-- Supabase function concurrency, grants and RLS tests against an isolated development database.
-- Health/readiness checks and structured redacted operational logs.
-- Done when required CI suites pass, DB atomicity/privileges are proven, the independent review has no introduced finding above Low, and production smoke evidence is recorded.
+## Lifecycle and delivery phases
 
-### 4. Developer experience and observability — planned
-- Complete API reference with curl, Node and Python examples, supported fields, errors, stream parsing and rate-limit headers.
-- API key rename/rotation with safe overlap and revocation; per-key last-used status.
-- Per-key/model usage, provider cost, latency and request outcome views with tenant isolation.
-- Model/provider metadata and pricing with explicit source and freshness.
+### Phase 0 — Product definition and design (current strategic update)
+- Source-backed competitor benchmark, capability matrix, differentiator hypotheses and initial beachhead.
+- Map each core job to a screen and its question/primary action.
+- Produce two visual directions for the first key screens, then implement from the approved design system.
+- Done when the owner approves the direction, jobs map and first-screen designs.
 
-### 5. Production readiness and first release — not yet complete
-- Independent review, security and performance review proposals, coverage map, release history and environment record.
-- Production smoke: exact served commit, `/health`, auth callback, create/revoke key, non-stream request, SSE request, quota/rate boundaries and usage ingestion.
-- Front-door/legal content must describe actual data flows, provider forwarding, logging and retention; owner approves legal text.
-- Production sign-up and authenticated flows must be tested with a dedicated account; no real customer credentials in tests.
+### Phase 1 — Foundation and developer experience
+- Complete gateway hardening, integration tests and safe release evidence.
+- Model and provider discovery: search, filters, detailed capabilities, pricing and provider availability.
+- Playground: saved prompts, parameter controls, tool-call/structured-output visibility, side-by-side comparison, export.
+- Developer onboarding: quickstart, API reference, errors, curl and TypeScript/Python examples.
+- Done when a developer can discover, compare, test and integrate a model in under five minutes using the documented flow.
 
-### 6. Organizations, teams and billing — deferred
-- Only revisit after gateway reliability and production readiness are complete and the owner chooses a business model.
-- No billing tables, prices, plans, entitlements or team roles are implied by this roadmap.
+### Phase 2 — Routing and observability
+- Model-level fallbacks and provider routing policies: order, only/ignore, fallback behavior and cost/latency/throughput preferences.
+- Per-attempt routing trace, provider health, latency, throughput, errors and request replay.
+- Request explorer, usage export, per-key/environment analytics, budgets and notifications.
+- Done when routing and accounting are deterministic, explainable and covered by integration tests.
 
-## Current execution order
-1. Repair PR #13's lint/test failures and complete all required CI checks; no merge while red or pending.
-2. Verify the integration harness truly exercises the route with isolated Supabase/OpenRouter mocks; fix misleading assertions and cover timeout/error stream semantics.
-3. Add database-level tests for rate-limit and quota RPC concurrency, RLS and service-role-only grants.
-4. Add health/readiness semantics and redacted structured gateway telemetry.
-5. Generate and maintain architecture, flows, permissions, environment-variable and test-coverage docs.
-6. Perform independent review and a safe production smoke. Record unverified authenticated/provider steps honestly.
-7. Proceed to API key lifecycle, analytics and complete docs. Teams/billing stay deferred.
+### Phase 3 — Provider independence and multimodal API
+- Add direct provider adapters selected by model demand; OpenRouter remains optional, not the sole upstream.
+- Add vision/PDF/audio inputs, image generation, speech, transcription, embeddings and async video jobs where provider capabilities permit.
+- Add encrypted BYOK credentials, scoped provider use, priority/fallback and safe key rotation.
+- Done when every advertised provider/modality has contract tests, accurate capability metadata and cost accounting.
+
+### Phase 4 — Billing, governance and workspaces
+- Immutable credit ledger, top-ups, refunds and invoices after owner-approved fee/pricing policy.
+- Budgets, alerts, model/provider allowlists, privacy/data policies, guardrails and audit trail.
+- Multiple personal workspaces/environments; team/org RBAC after individual tenancy is proven.
+- Done when ledger reconciliation, policy precedence and authorization/tenant-isolation matrices pass.
+
+### Phase 5 — Developer ecosystem and scale
+- Official TypeScript SDK first, then Python and Go.
+- CLI, local request capture/replay viewer, MCP server and cookbook.
+- Public status/incident history and provider performance reporting.
+- Enterprise features such as SSO/SCIM, regional routing, private endpoints and workload identity only after validated demand.
+
+## Immediate execution order
+
+1. Recheck and complete PR #13 gateway timeout/integration work; verify tests actually exercise route behavior and timeout/fallback semantics.
+2. Recheck PR #16 lightweight PR CI + scheduled/manual release validation. Keep fast PR checks lightweight; comprehensive validation stays at release/stage boundaries.
+3. Recheck PR #15 and include this competitive scope and feature matrix in its authoritative documentation.
+4. Run a fresh independent review of the current gateway slice; fix any confirmed high-impact findings before merge.
+5. Complete the PE design stage: jobs map, navigation, two visual directions, approved tokens/components and high-fidelity key screens before broad feature expansion.
+6. Build Phase 1 in small vertical PRs: model/provider detail and metadata, then playground improvements, then developer docs/onboarding.
+7. Continue through routing, observability, multimodal/provider independence, governance/billing and developer ecosystem in the phase order above.
 
 ## Definition of done
-- A stage is done only when its own done-when holds and its gate passes on the agent's own run.
-- Tests and docs land with the change; a bug fix includes a regression test that fails before the fix.
-- Green lint/typecheck/build alone does not prove a data boundary, RPC privilege or production runtime.
-- No PR is merged until every required CI check completes successfully. A deploying push requires a clean independent review round.
 
-## Current status snapshot (2026-11-10)
-- `main` latest recorded CI run: success at `35d074f`.
-- PR #13 (gateway stream timeout + integration tests): open; its initial CI run failed at lint. Lint fixes are being applied on its branch; no successful rerun is yet evidenced.
-- PR #14 was created against PR #13's feature branch and has no GitHub Actions workflow run because CI only runs PRs targeting `main`; its changes are being folded back into PR #13.
-- Persistent rate limit migration `20261110000500_gateway_rate_limits.sql` and route integration are present on `main`; migration was previously applied to the connected Supabase project.
-- No complete production authenticated/provider smoke has been verified.
+- A stage is complete only when its PE lifecycle done-when is evidenced; a green CI run is not proof of user flow, isolation or production behavior.
+- Every PR has focused scope, tests and documentation; bug fixes include a regression test that fails before the fix.
+- No merge while required CI is pending or failing. Use fast PR checks and comprehensive release checks at stage/release boundaries.
+- Production migrations, production data writes, payment activation and release actions require the applicable owner approval.
+- Every competitive capability is labelled existing, partial, gap or later; never present roadmap items as shipped.
+- Routing decisions, costs, performance and provider availability must be evidence-backed and include freshness/sample context.
+
+## Deferred until evidence supports them
+
+- Enterprise SSO/SCIM, private endpoints, regional residency and contractual SLAs.
+- Team billing/seat plans and enterprise sales motion.
+- Proprietary inference infrastructure or foundation-model training.
+- Public price/fee commitments and live payment activation.
