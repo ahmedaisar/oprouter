@@ -21,12 +21,14 @@
 - Existing code: Next.js workspace, basic model catalogue, text playground, Supabase auth, activity/settings routes, API key management and an OpenAI-compatible chat-completions gateway.
 - Existing gateway controls: hashed API keys, optional model allowlists, monthly token quotas/reservations and persistent per-key fixed-window rate limits.
 - Not yet proven: production authenticated/provider flow, complete RPC privilege/RLS matrix, route fallback, direct provider adapters, multimodal endpoints, billing ledger, BYOK, workspaces, guardrails, SDKs, CLI, MCP, complete analytics and production readiness.
-- PRs #13, #15 and #16 remain the immediate engineering/documentation queue at the time of this plan update. Recheck live status before merging.
+- PR #15 (competitive product plan and system documentation) merged to `main` on 2026-11-10.
+- PR #13 remains open with configurable provider timeout and deterministic timeout/quota-cleanup integration coverage; the latest exact-head CI run is pending at the time of this update.
+- PR #16 remains open with fast PR checks and separate scheduled/manual comprehensive validation. Its earlier fast-check run passed; recheck the exact current head before merging.
 - Current status is not feature parity. See the competitive benchmark for capability-by-capability state.
 
 ## Lifecycle and delivery phases
 
-### Phase 0 — Product definition and design (current strategic update)
+### Phase 0 — Product definition and design (in progress)
 - Source-backed competitor benchmark, capability matrix, differentiator hypotheses and initial beachhead.
 - Map each core job to a screen and its question/primary action.
 - Produce two visual directions for the first key screens, then implement from the approved design system.
@@ -67,9 +69,9 @@
 
 1. Recheck and complete PR #13 gateway timeout/integration work; verify tests actually exercise route behavior and timeout/fallback semantics.
 2. Recheck PR #16 lightweight PR CI + scheduled/manual release validation. Keep fast PR checks lightweight; comprehensive validation stays at release/stage boundaries.
-3. Recheck PR #15 and include this competitive scope, feature matrix and jobs map in its authoritative documentation.
+3. PR #15 is merged; keep the competitive benchmark and jobs map authoritative and update status only when evidence changes.
 4. Run a fresh independent review of the current gateway slice; fix any confirmed high-impact findings before merge.
-5. Complete the PE design stage: jobs map, navigation, two visual directions, approved tokens/components and high-fidelity key screens before broad feature expansion.
+5. Complete the PE design stage: jobs map, navigation, two visual directions, approved tokens/components and high-fidelity key screens before broad feature expansion. The owner must review the direction before the kit and app screens are finalized.
 6. Build Phase 1 in small vertical PRs: model/provider detail and metadata, then playground improvements, then developer docs/onboarding.
 7. Continue through routing, observability, multimodal/provider independence, governance/billing and developer ecosystem in the phase order above.
 
